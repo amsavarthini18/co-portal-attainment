@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Attainment Portal (CO1 - CO5)</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f4f8; margin: 0; padding: 15px; }
+        .container { max-width: 1750px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+
+        .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #004080; padding-bottom: 10px; margin-bottom: 15px; }
+        .header-logo { width: 90px; height: 90px; border: 2px dashed #004080; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #004080; border-radius: 6px; background: #eef5fc; text-align: center; cursor: pointer; overflow: hidden; }
+        .header-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .header-title { flex-grow: 1; text-align: center; margin: 0 10px; }
+        .header-title h2 { margin: 0; color: #004080; font-size: 22px; text-transform: uppercase; }
+        .header-title p { margin: 3px 0 0; color: #333; font-size: 13px; font-weight: 600; }
+
+        .meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; background: #eef5fc; padding: 12px; border-radius: 6px; border: 1px solid #d0e1f9; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 11px; font-weight: bold; margin-bottom: 3px; color: #004080; }
+        .form-group input { padding: 6px; border: 1px solid #a6c8e0; border-radius: 4px; font-size: 12px; }
+
+        .global-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        
+        .nav-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 15px; border-bottom: 3px solid #004080; padding-bottom: 5px; }
+        .tab-btn { padding: 8px 10px; font-size: 11px; font-weight: bold; border: 1px solid #a6c8e0; border-bottom: none; background-color: #eef5fc; color: #004080; cursor: pointer; border-radius: 5px 5px 0 0; transition: 0.2s; }
+        .tab-btn.active { background-color: #004080; color: white; border-color: #004080; }
+
+        .page-content { display: none; }
+        .page-content.active { display: block; }
+
+        .table-wrapper { overflow-x: auto; margin-bottom: 15px; max-height: 550px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; }
+        th, td { border: 1px solid #bdc3c7; padding: 5px; white-space: nowrap; }
+        th { background-color: #004080; color: white; font-weight: 600; position: sticky; top: 0; z-index: 2; }
+        
+        .bg-sub-header { background-color: #0056b3 !important; color: white; }
+        .bg-partc-header { background-color: #28a745 !important; color: white; }
+        .bg-co-header { background-color: #002244 !important; color: #ffeb3b; }
+        .bg-total { background-color: #d4edda; font-weight: bold; color: #155724; }
+
+        input[type="number"] { width: 45px; text-align: center; padding: 3px; border: 1px solid #0056b3; border-radius: 3px; }
+        input[type="text"] { text-align: left; padding: 3px; border: 1px solid #a6c8e0; border-radius: 3px; }
+
+        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; color: white; }
+        .btn-add { background-color: #28a745; }
+        .btn-save { background-color: #ff9800; }
+        .btn-export { background-color: #0056b3; }
+        .btn-export-all { background-color: #d9534f; font-size: 13px; padding: 10px 20px; }
+        .btn-reset-logo { background-color: #6c757d; font-size: 11px; padding: 5px 10px; }
+        .btn-delete { background-color: #dc3545; padding: 3px 8px; font-size: 11px; }
+
+        input:focus { outline: 2px solid #0056b3; background-color: #e8f0fe; }
+    </style>
+</head>
+<body onload="restoreSavedLogos(); loadAllSavedData(); renderAllTables(); enableKeyboardNavigation();">
+
+<div class="container">
+    <div class="header">
+        <div class="header-logo" onclick="document.getElementById('leftLogoInput').click()">
+            <span id="leftLogoText">Upload<br>Left Logo</span>
+            <img id="leftLogoImg" style="display:none;">
+            <input type="file" id="leftLogoInput" accept="image/*" style="display:none;" onchange="loadLogo(event, 'leftLogoImg', 'leftLogoText', 'savedLeftLogo')">
+        </div>
+        <div class="header-title">
+            <h2 id="dispCollegeName">SRI MUTHUKUMARAN INSTITUTE OF TECHNOLOGY</h2>
+            <p id="dispDeptName">DEPARTMENT OF INFORMATION TECHNOLOGY</p>
+            <p style="font-size: 12px; color: #004080;" id="dispSubDetails">SUBJECT: - | CODE: -</p>
+        </div>
+        <div class="header-logo" onclick="document.getElementById('rightLogoInput').click()">
+            <span id="rightLogoText">Upload<br>Right Logo</span>
+            <img id="rightLogoImg" style="display:none;">
+            <input type="file" id="rightLogoInput" accept="image/*" style="display:none;" onchange="loadLogo(event, 'rightLogoImg', 'rightLogoText', 'savedRightLogo')">
+        </div>
+    </div>
+
+    <!-- META DATA -->
+    <div class="meta-grid">
+        <div class="form-group"><label>College Name</label><input type="text" id="collegeName" value="SRI MUTHUKUMARAN INSTITUTE OF TECHNOLOGY" oninput="updateAllHeaders()"></div>
+        <div class="form-group"><label>Department Name</label><input type="text" id="deptName" value="DEPARTMENT OF INFORMATION TECHNOLOGY" oninput="updateAllHeaders()"></div>
+        <div class="form-group"><label>Subject Name *</label><input type="text" id="subjectName" placeholder="Enter Subject Name" oninput="updateAllHeaders()"></div>
+        <div class="form-group"><label>Subject Code *</label><input type="text" id="subjectCode" placeholder="Enter Subject Code" oninput="updateAllHeaders()"></div>
+    </div>
+
+    <div class="global-actions">
+        <button class="btn btn-reset-logo" onclick="clearSavedLogos()">🔄 Clear Saved Logos</button>
+        <button class="btn btn-export-all" onclick="exportAllSheetsToExcel()">📊 Download Overall Workbook</button>
+    </div>
+
+    <!-- TABS -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab(event, 'courseAssessment')">1. Course Assessment</button>
+        <button class="tab-btn" onclick="switchTab(event, 'studentNamelist')">2. Students Namelist</button>
+        <button class="tab-btn" onclick="switchTab(event, 'internal1')">3. Internal I</button>
+        <button class="tab-btn" onclick="switchTab(event, 'internal2')">4. Internal II</button>
+        <button class="tab-btn" onclick="switchTab(event, 'unitTest')">5. Unit Test</button>
+        <button class="tab-btn" onclick="switchTab(event, 'assessmentAttainment')">6. Assessment Attainment</button>
+        <button class="tab-btn" onclick="switchTab(event, 'assignment')">7. Assignment</button>
+        <button class="tab-btn" onclick="switchTab(event, 'endSem')">8. End Sem</button>
+        <button class="tab-btn" onclick="switchTab(event, 'directAttainment')">9. Direct Attainment</button>
+        <button class="tab-btn" onclick="switchTab(event, 'finalAttainment')">10. Final Attainment</button>
+    </div>
+
+    <!-- 1. COURSE ASSESSMENT -->
+    <div id="courseAssessment" class="page-content active">
+        <div class="btn-group">
+            <button class="btn btn-save" onclick="saveCourseAssessment()">💾 Save Course Assessment</button>
+            <button class="btn btn-export" onclick="exportToExcel('courseAssessment', '1_Course_Assessment')">📥 Download This Sheet</button>
+        </div>
+        <h3>1. Course Outcomes Definition & Target Setup</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>CO Code</th><th>Course Outcome Description</th><th>Target (%)</th></tr>
+                </thead>
+                <tbody id="coTableBody">
+                    <tr><td><b>CO1</b></td><td><input type="text" id="co1_desc" placeholder="Enter CO1 Description" style="width:90%;"></td><td><input type="number" value="70"></td></tr>
+                    <tr><td><b>CO2</b></td><td><input type="text" id="co2_desc" placeholder="Enter CO2 Description" style="width:90%;"></td><td><input type="number" value="70"></td></tr>
+                    <tr><td><b>CO3</b></td><td><input type="text" id="co3_desc" placeholder="Enter CO3 Description" style="width:90%;"></td><td><input type="number" value="70"></td></tr>
+                    <tr><td><b>CO4</b></td><td><input type="text" id="co4_desc" placeholder="Enter CO4 Description" style="width:90%;"></td><td><input type="number" value="70"></td></tr>
+                    <tr><td><b>CO5</b></td><td><input type="text" id="co5_desc" placeholder="Enter CO5 Description" style="width:90%;"></td><td><input type="number" value="70"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. STUDENTS NAMELIST -->
+    <div id="studentNamelist" class="page-content">
+        <div class="btn-group">
+            <button class="btn btn-add" onclick="addNewStudentGlobal()">➕ Add New Student</button>
+            <button class="btn btn-save" onclick="saveStudentsData()">💾 Save Students Namelist</button>
+            <button class="btn btn-export" onclick="exportToExcel('studentNamelist', '2_Students_Namelist')">📥 Download This Sheet</button>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>S.No</th><th>Register No</th><th>Student Name</th><th>Action</th></tr>
+                </thead>
+                <tbody id="studentNamelistBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 3. INTERNAL ASSESSMENT - I -->
+    <div id="internal1" class="page-content">
+        <div class="btn-group">
+            <button class="btn btn-save" onclick="saveInternal1Data()">💾 Save Internal I Marks</button>
+            <button class="btn btn-export" onclick="exportToExcel('internal1', '3_Internal_1_Report')">📥 Download This Sheet</button>
+        </div>
+        <div class="table-wrapper">
+            <table id="tableInt1">
+                <thead>
+                    <tr>
+                        <th rowspan="2">S.No</th><th rowspan="2">Reg No</th><th rowspan="2">Name</th>
+                        <th colspan="5" class="bg-sub-header">PART A (5 x 2 = 10 Marks)</th>
+                        <th colspan="4" class="bg-sub-header">PART B (2 x 13 = 26 Marks)</th>
+                        <th colspan="2" class="bg-partc-header">PART C (1 x 14 = 14 Marks)</th>
+                        <th rowspan="2" class="bg-total">TOTAL<br>(50 Marks)</th>
+                        <th colspan="5" class="bg-co-header">REAL-TIME CO ATTAINMENT (%)</th>
+                    </tr>
+                    <tr>
+                        <th>Q1 (CO1)</th><th>Q2 (CO1)</th><th>Q3 (CO2)</th><th>Q4 (CO2)</th><th>Q5 (CO3)</th>
+                        <th>11.a (CO1)</th><th>11.b (CO1)</th><th>12.a (CO2)</th><th>12.b (CO2)</th>
+                        <th>13.a (CO3)</th><th>13.b (CO3)</th>
+                        <th>CO1%</th><th>CO2%</th><th>CO3%</th><th>CO4%</th><th>CO5%</th>
+                    </tr>
+                </thead>
+                <tbody id="int1Body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 4. INTERNAL ASSESSMENT - II -->
+    <div id="internal2" class="page-content">
+        <div class="btn-group">
+            <button class="btn btn-save" onclick="saveInternal2Data()">💾 Save Internal II Marks</button>
+            <button class="btn btn-export" onclick="exportToExcel('internal2', '4_Internal_2_Report')">📥 Download This Sheet</button>
+        </div>
+        <div class="table-wrapper">
+            <table id="tableInt2">
+                <thead>
+                    <tr>
+                        <th rowspan="2">S.No</th><th rowspan="2">Reg No</th><th rowspan="2">Name</th>
+                        <th colspan="5" class="bg-sub-header">PART A (5 x 2 = 10 Marks)</th>
+                        <th colspan="4" class="bg-sub-header">PART B (2 x 13 = 26 Marks)</th>
+                        <th colspan="2" class="bg-partc-header">PART C (1 x 14 = 14 Marks)</th>
+                        <th rowspan="2" class="bg-total">TOTAL<br>(50 Marks)</th>
+                        <th colspan="5" class="bg-co-header">REAL-TIME CO ATTAINMENT (%)</th>
+                    </tr>
+                    <tr>
+                        <th>Q1 (CO3)</th><th>Q2 (CO3)</th><th>Q3 (CO4)</th><th>Q4 (CO4)</th><th>Q5 (CO5)</th>
+                        <th>11.a (CO3)</th><th>11.b (CO3)</th><th>12.a (CO4)</th><th>12.b (CO4)</th>
+                        <th>13.a (CO5)</th><th>13.b (CO5)</th>
+                        <th>CO1%</th><th>CO2%</th><th>CO3%</th><th>CO4%</th><th>CO5%</th>
+                    </tr>
+                </thead>
+                <tbody id="int2Body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 5. UNIT TEST -->
+    <div id="unitTest" class="page-content">
+        <div class="btn-group">
+            <button class="btn btn-export" onclick="exportToExcel('unitTest', '5_Unit_Test_Report')">📥 Download This Sheet</button>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>S.No</th><th>Reg No</th><th>Name</th><th>UT 1 (CO1)</th><th>UT 2 (CO2)</th><th>UT 3 (CO3)</th><th>UT 4 (CO4)</th><th>UT 5 (CO5)</th></tr>
+                </thead>
+                <tbody id="unitTestBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 6. ASSESSMENT ATTAINMENT -->
+    <div id="assessmentAttainment" class="page-content">
+        <div class="btn-group">
+            <button class="btn btn-export" onclick="exportToExcel('assessmentAttainment', '6_Assessment_Attainment')">📥 Download This Sheet</button>
+        </div>
+        <h3>6. Continuous Internal Assessment Attainment Summary</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>S.No</th><th>Reg No</th><th>Name</th><th>CO1%</th><th>CO2%</th><th>CO3%</th><th>CO4%</th><th>CO5%</th></tr>
+                </thead>
+                <tbody id="coSummaryBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 7. ASSIGNMENT -->
+    <div id="assignment" class="page-content">
+        <div class="btn-group">
+            <button class="btn btn-export" onclick="exportToExcel('assignment', '7_Assignment_Marks')">📥 Download This Sheet</button>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>S.No</th><th>Reg No</th><th>Name</th><th>Assign 1 (CO1)</th><th>Assign 2 (CO2)</th><th>Assign 3 (CO3)</th><th>Assign 4 (CO4)</th><th>Assign 5 (CO5)</th></tr>
+                </thead>
+                <tbody id="assignmentBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 8. END SEM -->
+    <div id="endSem" class="page-content">
+        <div class="btn-group">
+            <button class="btn btn-export" onclick="exportToExcel('endSem', '8_End_Semester_Marks')">📥 Download This Sheet</button>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>S.No</th><th>Reg No</th><th>Name</th><th>University Grade</th><th>University Marks (100)</th><th>Status</th></tr>
+                </thead>
+                <tbody id="endSemBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 9. DIRECT ATTAINMENT -->
+    <div id="directAttainment" class="page-content">
+        <div class="btn-group">
+            <button class="btn btn-export" onclick="exportToExcel('directAttainment', '9_Direct_Attainment')">📥 Download This Sheet</button>
+        </div>
+        <h3>9. Direct CO Attainment (Internal 80% + End Sem 20%)</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>CO Code</th><th>Internal Attainment Level</th><th>University Attainment Level</th><th>Direct Attainment Value</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><b>CO1</b></td><td>Level 3</td><td>Level 3</td><td>3.00</td></tr>
+                    <tr><td><b>CO2</b></td><td>Level 3</td><td>Level 3</td><td>3.00</td></tr>
+                    <tr><td><b>CO3</b></td><td>Level 2</td><td>Level 3</td><td>2.80</td></tr>
+                    <tr><td><b>CO4</b></td><td>Level 3</td><td>Level 3</td><td>3.00</td></tr>
+                    <tr><td><b>CO5</b></td><td>Level 3</td><td>Level 3</td><td>3.00</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 10. FINAL ATTAINMENT -->
+    <div id="finalAttainment" class="page-content">
+        <div class="btn-group">
+            <button class="btn btn-export" onclick="exportToExcel('finalAttainment', '10_Final_CO_Attainment')">📥 Download This Sheet</button>
+        </div>
+        <h3>10. Final Overall Course Outcome Attainment (Direct + Indirect)</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>CO Code</th><th>Direct Attainment (80%)</th><th>Indirect Attainment (20%)</th><th>Final CO Attainment Level</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><b>CO1</b></td><td>2.40</td><td>0.60</td><td><b>3.00 (High)</b></td></tr>
+                    <tr><td><b>CO2</b></td><td>2.40</td><td>0.60</td><td><b>3.00 (High)</b></td></tr>
+                    <tr><td><b>CO3</b></td><td>2.24</td><td>0.60</td><td><b>2.84 (High)</b></td></tr>
+                    <tr><td><b>CO4</b></td><td>2.40</td><td>0.60</td><td><b>3.00 (High)</b></td></tr>
+                    <tr><td><b>CO5</b></td><td>2.40</td><td>0.60</td><td><b>3.00 (High)</b></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let students = [
+        {"regNo": "212623205001", "name": "ABINAYA K"},
+        {"regNo": "212623205002", "name": "AMSAVARTHINI A"},
+        {"regNo": "212623205003", "name": "ARIKRISHNAN R"},
+        {"regNo": "212623205004", "name": "BALAMURUGAN S"},
+        {"regNo": "212623205005", "name": "BHUVANESHKUMAR M"},
+        {"regNo": "212623205006", "name": "BLESSI V"},
+        {"regNo": "212623205009", "name": "DHARSHINI M V"},
+        {"regNo": "212623205010", "name": "DINESH A"},
+        {"regNo": "212623205011", "name": "DRAVID KUMAR R"},
+        {"regNo": "212623205012", "name": "EBENEZER ISSAC I"},
+        {"regNo": "212623205013", "name": "GOPI P"},
+        {"regNo": "212623205015", "name": "HARI PRASANTH S"},
+        {"regNo": "212623205016", "name": "HELEN SHARON A"},
+        {"regNo": "212623205017", "name": "JANANI B"},
+        {"regNo": "212623205018", "name": "KAYALVIZHI P"},
+        {"regNo": "212623205019", "name": "KIRUBAKARAN M"},
+        {"regNo": "212623205020", "name": "LOKESH B"},
+        {"regNo": "212623205021", "name": "MADHAN KUMAR B"},
+        {"regNo": "212623205022", "name": "MADHUMITHA S"},
+        {"regNo": "212623205023", "name": "NADESAN S"},
+        {"regNo": "212623205024", "name": "NANDHINI P"},
+        {"regNo": "212623205025", "name": "NANDHINI S"},
+        {"regNo": "212623205026", "name": "POOJA K"},
+        {"regNo": "212623205027", "name": "PREETHI S"},
+        {"regNo": "212623205028", "name": "RAGHURAJ R"},
+        {"regNo": "212623205029", "name": "RAJAVIKRAM V"},
+        {"regNo": "212623205030", "name": "RAJESWARI R"},
+        {"regNo": "212623205031", "name": "RUBAN V"},
+        {"regNo": "212623205032", "name": "SAGITHAN K"},
+        {"regNo": "212623205033", "name": "SANJAY R"},
+        {"regNo": "212623205034", "name": "SATHIYAMOORTHI S"},
+        {"regNo": "212623205035", "name": "TAMILARASAN M"},
+        {"regNo": "212623205036", "name": "THIRUSELVAM J"},
+        {"regNo": "212623205037", "name": "VANISHREE E"},
+        {"regNo": "212623205038", "name": "VANJINATHAN L"},
+        {"regNo": "212623205039", "name": "VINOTHA K"},
+        {"regNo": "212623205301", "name": "JEEVA A"}
+    ];
+
+    function validateSubjectDetails() {
+        const subName = document.getElementById('subjectName').value.trim();
+        const subCode = document.getElementById('subjectCode').value.trim();
+
+        if (!subName) {
+            alert('⚠️ Please enter the Subject Name before saving!');
+            document.getElementById('subjectName').focus();
+            return false;
+        }
+        if (!subCode) {
+            alert('⚠️ Please enter the Subject Code before saving!');
+            document.getElementById('subjectCode').focus();
+            return false;
+        }
+        return true;
+    }
+
+    function validateCourseOutcomes() {
+        if (!validateSubjectDetails()) return false;
+
+        for (let i = 1; i <= 5; i++) {
+            const coElem = document.getElementById(`co${i}_desc`);
+            if (coElem && !coElem.value.trim()) {
+                alert(`⚠️ Please enter description for CO${i}!`);
+                coElem.focus();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function switchTab(evt, pageId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        evt.currentTarget.classList.add('active');
+    }
+
+    function updateAllHeaders() {
+        const cName = document.getElementById('collegeName').value || 'COLLEGE NAME';
+        const dName = document.getElementById('deptName').value || 'DEPARTMENT NAME';
+        const sName = document.getElementById('subjectName').value || '-';
+        const sCode = document.getElementById('subjectCode').value || '-';
+
+        document.getElementById('dispCollegeName').innerText = cName;
+        document.getElementById('dispDeptName').innerText = dName;
+        document.getElementById('dispSubDetails').innerText = `SUBJECT: ${sName.toUpperCase()} | CODE: ${sCode.toUpperCase()}`;
+
+        saveMetaData();
+    }
+
+    function saveMetaData() {
+        const metaData = {
+            collegeName: document.getElementById('collegeName').value,
+            deptName: document.getElementById('deptName').value,
+            subjectName: document.getElementById('subjectName').value,
+            subjectCode: document.getElementById('subjectCode').value
+        };
+        localStorage.setItem('portalMetaData', JSON.stringify(metaData));
+    }
+
+    function calculateCOsInt1(row) {
+        const inputs = row.querySelectorAll('input[type="number"]');
+        let q = [];
+        inputs.forEach(i => q.push(parseFloat(i.value) || 0));
+
+        let total = q[0] + q[1] + q[2] + q[3] + q[4] + Math.max(q[5], q[6]) + Math.max(q[7], q[8]) + Math.max(q[9], q[10]);
+        row.querySelector('.total-cell').innerText = total;
+
+        let co1 = ((q[0] + q[1] + Math.max(q[5], q[6])) / 17) * 100;
+        let co2 = ((q[2] + q[3] + Math.max(q[7], q[8])) / 17) * 100;
+        let co3 = ((q[4] + Math.max(q[9], q[10])) / 16) * 100;
+
+        row.querySelector('.co1-val').innerText = co1.toFixed(1) + '%';
+        row.querySelector('.co2-val').innerText = co2.toFixed(1) + '%';
+        row.querySelector('.co3-val').innerText = co3.toFixed(1) + '%';
+        row.querySelector('.co4-val').innerText = 'N/A';
+        row.querySelector('.co5-val').innerText = 'N/A';
+
+        renderCOSummary();
+    }
+
+    function calculateCOsInt2(row) {
+        const inputs = row.querySelectorAll('input[type="number"]');
+        let q = [];
+        inputs.forEach(i => q.push(parseFloat(i.value) || 0));
+
+        let total = q[0] + q[1] + q[2] + q[3] + q[4] + Math.max(q[5], q[6]) + Math.max(q[7], q[8]) + Math.max(q[9], q[10]);
+        row.querySelector('.total-cell').innerText = total;
+
+        let co3 = ((q[0] + q[1] + Math.max(q[5], q[6])) / 17) * 100;
+        let co4 = ((q[2] + q[3] + Math.max(q[7], q[8])) / 17) * 100;
+        let co5 = ((q[4] + Math.max(q[9], q[10])) / 16) * 100;
+
+        row.querySelector('.int2-co1-val').innerText = 'N/A';
+        row.querySelector('.int2-co2-val').innerText = 'N/A';
+        row.querySelector('.int2-co3-val').innerText = co3.toFixed(1) + '%';
+        row.querySelector('.int2-co4-val').innerText = co4.toFixed(1) + '%';
+        row.querySelector('.int2-co5-val').innerText = co5.toFixed(1) + '%';
+
+        renderCOSummary();
+    }
+
+    function renderInternal1() {
+        const tbody = document.getElementById('int1Body');
+        tbody.innerHTML = '';
+        const savedMarks = JSON.parse(localStorage.getItem('savedInt1Marks')) || [];
+
+        students.forEach((s, idx) => {
+            let qInputs = '';
+            for (let i = 1; i <= 11; i++) {
+                const val = (savedMarks[idx] && savedMarks[idx][i - 1]) ? savedMarks[idx][i - 1] : '';
+                let maxMark = (i <= 5) ? 2 : (i <= 9 ? 13 : 14);
+                qInputs += `<td><input type="number" min="0" max="${maxMark}" value="${val}" oninput="calculateCOsInt1(this.closest('tr'))"></td>`;
+            }
+            tbody.innerHTML += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${s.regNo}</td>
+                    <td style="text-align:left;">${s.name}</td>
+                    ${qInputs}
+                    <td class="bg-total total-cell">0</td>
+                    <td class="co1-val">0.0%</td><td class="co2-val">0.0%</td><td class="co3-val">0.0%</td><td class="co4-val">N/A</td><td class="co5-val">N/A</td>
+                </tr>
+            `;
+        });
+        document.querySelectorAll('#int1Body tr').forEach(r => calculateCOsInt1(r));
+    }
+
+    function renderInternal2() {
+        const tbody = document.getElementById('int2Body');
+        tbody.innerHTML = '';
+        const savedMarks = JSON.parse(localStorage.getItem('savedInt2Marks')) || [];
+
+        students.forEach((s, idx) => {
+            let qInputs = '';
+            for (let i = 1; i <= 11; i++) {
+                const val = (savedMarks[idx] && savedMarks[idx][i - 1]) ? savedMarks[idx][i - 1] : '';
+                let maxMark = (i <= 5) ? 2 : (i <= 9 ? 13 : 14);
+                qInputs += `<td><input type="number" min="0" max="${maxMark}" value="${val}" oninput="calculateCOsInt2(this.closest('tr'))"></td>`;
+            }
+            tbody.innerHTML += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${s.regNo}</td>
+                    <td style="text-align:left;">${s.name}</td>
+                    ${qInputs}
+                    <td class="bg-total total-cell">0</td>
+                    <td class="int2-co1-val">N/A</td><td class="int2-co2-val">N/A</td><td class="int2-co3-val">0.0%</td><td class="int2-co4-val">0.0%</td><td class="int2-co5-val">0.0%</td>
+                </tr>
+            `;
+        });
+        document.querySelectorAll('#int2Body tr').forEach(r => calculateCOsInt2(r));
+    }
+
+    function renderGenericStudentRows(elementId, extraColumnsCount) {
+        const tbody = document.getElementById(elementId);
+        tbody.innerHTML = '';
+        students.forEach((s, idx) => {
+            let cols = '';
+            for (let i = 0; i < extraColumnsCount; i++) {
+                cols += `<td><input type="number" min="0" max="100"></td>`;
+            }
+            tbody.innerHTML += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${s.regNo}</td>
+                    <td style="text-align:left;">${s.name}</td>
+                    ${cols}
+                </tr>
+            `;
+        });
+    }
+
+    function renderCOSummary() {
+        const tbody = document.getElementById('coSummaryBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const int1Rows = document.querySelectorAll('#int1Body tr');
+        const int2Rows = document.querySelectorAll('#int2Body tr');
+
+        students.forEach((s, idx) => {
+            let co1 = int1Rows[idx] ? int1Rows[idx].querySelector('.co1-val').innerText : '0.0%';
+            let co2 = int1Rows[idx] ? int1Rows[idx].querySelector('.co2-val').innerText : '0.0%';
+            
+            let co3_int1 = int1Rows[idx] ? parseFloat(int1Rows[idx].querySelector('.co3-val').innerText) || 0 : 0;
+            let co3_int2 = int2Rows[idx] ? parseFloat(int2Rows[idx].querySelector('.int2-co3-val').innerText) || 0 : 0;
+            let co3 = (co3_int1 > 0 && co3_int2 > 0) ? ((co3_int1 + co3_int2) / 2).toFixed(1) + '%' : (co3_int1 || co3_int2).toFixed(1) + '%';
+
+            let co4 = int2Rows[idx] ? int2Rows[idx].querySelector('.int2-co4-val').innerText : '0.0%';
+            let co5 = int2Rows[idx] ? int2Rows[idx].querySelector('.int2-co5-val').innerText : '0.0%';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${s.regNo}</td>
+                    <td style="text-align:left;">${s.name}</td>
+                    <td>${co1}</td><td>${co2}</td><td>${co3}</td>
+                    <td>${co4}</td><td>${co5}</td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderStudentNamelist() {
+        const tbody = document.getElementById('studentNamelistBody');
+        tbody.innerHTML = '';
+        students.forEach((s, idx) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td><input type="text" value="${s.regNo}" onchange="updateStudent(${idx}, 'regNo', this.value)"></td>
+                    <td><input type="text" value="${s.name}" style="width: 250px;" onchange="updateStudent(${idx}, 'name', this.value)"></td>
+                    <td><button class="btn btn-delete" onclick="deleteStudent(${idx})">❌ Delete</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderAllTables() {
+        renderStudentNamelist();
+        renderInternal1();
+        renderInternal2();
+        renderGenericStudentRows('unitTestBody', 5);
+        renderGenericStudentRows('assignmentBody', 5);
+        renderGenericStudentRows('endSemBody', 3);
+        renderCOSummary();
+    }
+
+    function addNewStudentGlobal() {
+        students.push({"regNo": "", "name": "NEW STUDENT"});
+        renderAllTables();
+    }
+
+    function updateStudent(idx, field, val) {
+        students[idx][field] = val;
+        renderAllTables();
+    }
+
+    function deleteStudent(idx) {
+        if (confirm('Are you sure you want to delete this student?')) {
+            students.splice(idx, 1);
+            renderAllTables();
+        }
+    }
+
+    function saveCourseAssessment() { 
+        if (!validateCourseOutcomes()) return;
+
+        const coData = [];
+        for (let i = 1; i <= 5; i++) {
+            coData.push(document.getElementById(`co${i}_desc`).value);
+        }
+        localStorage.setItem('savedCODescriptions', JSON.stringify(coData));
+
+        alert('✅ Course Assessment Saved Successfully!'); 
+    }
+    
+    function saveStudentsData() {
+        if (!validateSubjectDetails()) return;
+        localStorage.setItem('savedStudents', JSON.stringify(students));
+        alert('✅ Students List Saved Successfully!');
+    }
+
+    function saveInternal1Data() {
+        if (!validateSubjectDetails()) return;
+        const rows = document.querySelectorAll('#int1Body tr');
+        const int1Marks = [];
+        rows.forEach(r => {
+            const inputs = r.querySelectorAll('input[type="number"]');
+            int1Marks.push(Array.from(inputs).map(i => i.value));
+        });
+        localStorage.setItem('savedInt1Marks', JSON.stringify(int1Marks));
+        alert('✅ Internal Assessment I Marks Saved Successfully!');
+    }
+
+    function saveInternal2Data() {
+        if (!validateSubjectDetails()) return;
+        const rows = document.querySelectorAll('#int2Body tr');
+        const int2Marks = [];
+        rows.forEach(r => {
+            const inputs = r.querySelectorAll('input[type="number"]');
+            int2Marks.push(Array.from(inputs).map(i => i.value));
+        });
+        localStorage.setItem('savedInt2Marks', JSON.stringify(int2Marks));
+        alert('✅ Internal Assessment II Marks Saved Successfully!');
+    }
+
+    function loadLogo(event, imgId, textId, storageKey) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById(imgId);
+                img.src = e.target.result;
+                img.style.display = 'block';
+                document.getElementById(textId).style.display = 'none';
+                localStorage.setItem(storageKey, e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function restoreSavedLogos() {
+        const leftLogo = localStorage.getItem('savedLeftLogo');
+        if (leftLogo) {
+            document.getElementById('leftLogoImg').src = leftLogo;
+            document.getElementById('leftLogoImg').style.display = 'block';
+            document.getElementById('leftLogoText').style.display = 'none';
+        }
+
+        const rightLogo = localStorage.getItem('savedRightLogo');
+        if (rightLogo) {
+            document.getElementById('rightLogoImg').src = rightLogo;
+            document.getElementById('rightLogoImg').style.display = 'block';
+            document.getElementById('rightLogoText').style.display = 'none';
+        }
+    }
+
+    function clearSavedLogos() {
+        localStorage.removeItem('savedLeftLogo');
+        localStorage.removeItem('savedRightLogo');
+        document.getElementById('leftLogoImg').style.display = 'none';
+        document.getElementById('leftLogoText').style.display = 'block';
+        document.getElementById('rightLogoImg').style.display = 'none';
+        document.getElementById('rightLogoText').style.display = 'block';
+        alert('✅ Logos Cleared!');
+    }
+
+    function loadAllSavedData() {
+        const meta = JSON.parse(localStorage.getItem('portalMetaData'));
+        if (meta) {
+            document.getElementById('collegeName').value = meta.collegeName || '';
+            document.getElementById('deptName').value = meta.deptName || '';
+            document.getElementById('subjectName').value = meta.subjectName || '';
+            document.getElementById('subjectCode').value = meta.subjectCode || '';
+            updateAllHeaders();
+        }
+
+        const coData = JSON.parse(localStorage.getItem('savedCODescriptions'));
+        if (coData) {
+            for (let i = 1; i <= 5; i++) {
+                if (document.getElementById(`co${i}_desc`)) {
+                    document.getElementById(`co${i}_desc`).value = coData[i - 1] || '';
+                }
+            }
+        }
+
+        const savedStudents = JSON.parse(localStorage.getItem('savedStudents'));
+        if (savedStudents && savedStudents.length > 0) {
+            students = savedStudents;
+        }
+    }
+
+    function exportToExcel(divId, fileName) {
+        const table = document.querySelector(`#${divId} table`);
+        if (!table) {
+            alert('Table not found!');
+            return;
+        }
+        const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
+        XLSX.writeFile(wb, `${fileName}.xlsx`);
+    }
+
+    function exportAllSheetsToExcel() {
+        const wb = XLSX.utils.book_new();
+        const sheetsToExport = [
+            { id: 'courseAssessment', name: '1_Course_Assessment' },
+            { id: 'studentNamelist', name: '2_Students_Namelist' },
+            { id: 'internal1', name: '3_Internal_1' },
+            { id: 'internal2', name: '4_Internal_2' },
+            { id: 'unitTest', name: '5_Unit_Test' },
+            { id: 'assessmentAttainment', name: '6_Assessment_Attain' },
+            { id: 'assignment', name: '7_Assignment' },
+            { id: 'endSem', name: '8_End_Sem' },
+            { id: 'directAttainment', name: '9_Direct_Attain' },
+            { id: 'finalAttainment', name: '10_Final_Attain' }
+        ];
+
+        sheetsToExport.forEach(sheetInfo => {
+            const table = document.querySelector(`#${sheetInfo.id} table`);
+            if (table) {
+                const ws = XLSX.utils.table_to_sheet(table);
+                XLSX.utils.book_append_sheet(wb, ws, sheetInfo.name);
+            }
+        });
+
+        XLSX.writeFile(wb, 'Complete_Course_Attainment_Report.xlsx');
+    }
+
+    function enableKeyboardNavigation() {
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName !== 'INPUT' || e.target.type !== 'number') return;
+            
+            const td = e.target.closest('td');
+            const tr = td.closest('tr');
+            const tbody = tr.closest('tbody');
+            if(!td || !tr || !tbody) return;
+
+            const colIdx = Array.from(tr.children).indexOf(td);
+            const rowIdx = Array.from(tbody.children).indexOf(tr);
+
+            let nextInput;
+            if (e.key === 'ArrowRight') {
+                nextInput = tr.children[colIdx + 1]?.querySelector('input');
+            } else if (e.key === 'ArrowLeft') {
+                nextInput = tr.children[colIdx - 1]?.querySelector('input');
+            } else if (e.key === 'ArrowDown') {
+                nextInput = tbody.children[rowIdx + 1]?.children[colIdx]?.querySelector('input');
+            } else if (e.key === 'ArrowUp') {
+                nextInput = tbody.children[rowIdx - 1]?.children[colIdx]?.querySelector('input');
+            }
+
+            if (nextInput) {
+                e.preventDefault();
+                nextInput.focus();
+            }
+        });
+    }
+</script>
+</body>
+</html>
